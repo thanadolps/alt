@@ -1,0 +1,73 @@
+# alloc: 3 shared
+FIBO_STEP:
+    CPY I1 M1
+    CPY I2 M2
+    ADD
+    CPY M1 M2
+    CPY M2 O
+
+# alloc: 3 shared
+FIBO_LOOP:
+# can be allocation friendly but would cause me headache
+
+    CPY I1 M3
+    SET I2 1
+    ADD
+    CPY M3 O
+    CPY I1 O
+    SET I2 20
+    CMP
+
+    BJMP O
+    RADD FIBO_STEP
+    PRINT M1
+    PRINTC \\s
+    RSWP FIBO_LOOP
+    LAND
+
+# alloc: 3 sub[FIBO_STEP, FIBO_LOOP]
+RUN_FIBO:
+    # Is this what allocation friendly is
+    # How much should we sacrifice
+
+    # M0 to registry
+    CPY I1 M0
+
+    # ALLOC 3
+    SET I2 3
+    ADD
+    CPY M0 O
+
+    # M0 to registry
+    CPY I1 M0
+
+    # SET R0 1
+    SET I2 0
+    SUB
+    SET *O 1
+
+    # SET R1 1
+    SET I2 1
+    SUB
+    SET *O 1
+
+    # SET R2 0
+    SET I2 2
+    SUB
+    SET *O 0
+
+    # DEALLOC & RSWP
+    SET I2 3
+    SUB
+    CPY M0 O
+    RSWP FIBO_LOOP
+
+Main:
+    SET M0 0
+
+    # SET I1 1
+    # RADD RUN_FACTO
+    RADD RUN_FIBO
+    # PRINT M1
+    PRINTC \\n
+

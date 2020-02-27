@@ -1,0 +1,61 @@
+Languge specification
+
+Memory Model:
+	<I1> <I2> <O> -- Registry, 3 u8 holder
+	[M1, M2, M3, ...] -- Linear Memory, infinite u8 array
+
+Syntax Placeholder:
+	[X],[Y]: Placeholder for any memory location
+	[V]: Placeholder for literal numerical value
+	[R]: Routine name
+	
+Memory Location:
+	memory location can be
+	1. Registry
+		I1, I2, O
+	2. Linear Memeory
+		M0 is the leftest in Linear Memeory, followed by M1, M2, M3 and so on
+	3. Pointer
+		when 1. and 2. are prefixed by * their value are treated as a memory location in linear memory
+		for example, if M0=2, I2=69, then '*M0' is equivalent to 'M2' and '*I2' is eqivalent to 'M69'
+		conceptually, you can think of it as deref operator.
+		this can be arbitary chained
+		if M0=2,M1=69,M2=1 then 'PRINT **M0' which is eqivalent to 'PRINT *M2' which is also eqivalent to 'PRINT M1' will print 69
+	
+# Memeory-Registry Manupulation 
+CPY [X] [Y]: Copy X's value to Y's value
+SET [X] [V]: Set X to literal V
+
+
+# 0-ary Registry Manupulation
+ADD: O = I1 + I2 (under/overflowing)
+SUB: O = I1 - I2 (under/overflowing)
+MUL: and so on
+DIV
+MOD
+POW
+
+CMP: Set Registry O to 2 if I1 > I2, 1 if I1 = I2, 0 if I1 < I2
+
+
+# Control Flow
+while jumping most of the codepoint are ignored, the only exeception being LAND
+BJMP [X]: Jump if value in X != 0
+LAND: Stop Jumping
+
+# Routine
+RADD [R]: Add Routine with name R to the top of execution stack
+TERM: Terminate current Routein, removing it from execution stack
+RSWP [R]: swap current routine with R (effectivly terminating current routine)
+
+all routine are auto terminated (pop out of execution stack) on the end of the routine
+special routine "Main" are an entry routine, which defaultly run(push to execution stack) on start of execution
+when the execution stack run out, the program ended
+
+# IO
+READ2 [X]: read char(u8) from console and store it at X, 0 if stdin is empty -- not implemented yet
+PRINT [X]: write X to console as number
+PRINTC [X]: write X to console as char
+
+# comment
+use "#" to comment python style
