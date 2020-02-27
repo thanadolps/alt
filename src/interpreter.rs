@@ -2,13 +2,13 @@ use crate::code::{CodePoint, MemLocation, ValMemLoc, Routines, UnitMemLocation};
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
 
 pub type MemUnit = u8;
 
 #[derive(Debug)]
 pub struct Interpreter {
     pub memory: Memory,
-    pub routines: Routines,
     pub runtime_stack: Vec<CodeFrame>,
 }
 
@@ -16,22 +16,21 @@ impl Interpreter {
     pub fn new() -> Self {
         let mut interpreter = Self {
             memory: Memory::new(),
-            routines: Routines::new(),
             runtime_stack: Vec::new(),
         };
         interpreter
     }
 
-    pub fn execute(&mut self) -> Result<(), &'static str> {
-        self.execute_routine("Main")?;
+    pub fn execute(&mut self, routines: &Routines) -> Result<(), &'static str> {
+        self.execute_routine("Main", routines)?;
         Ok(())
     }
 
-    pub fn execute_routine(&mut self, routine_name: &str) -> Result<(), &'static str> {
-        let frame = Interpreter::make_code_frame(&self.routines, routine_name)?;
+    pub fn execute_routine(&mut self, routine_name: &str, routines: &Routines) -> Result<(), &'static str> {
+        let frame = Interpreter::make_code_frame(&routines, routine_name)?;
 
         self.runtime_stack.push(frame);
-        self.run();
+        self.run(routines);
 
         Ok(())
     }
@@ -48,8 +47,8 @@ impl Interpreter {
     }
 
     // this is for internal use. for public use, use execute
-    fn run(&mut self) {
-        let Interpreter { runtime_stack, .. } = self;
+    fn run(&mut self, routines: &Routines) {
+        let Interpreter { runtime_stack, memory, .. } = self;
 
         // Main meat
         loop {
@@ -63,35 +62,35 @@ impl Interpreter {
                         }
                         _ if jumping => {}
                         CodePoint::Set { dest, value } => {
-                            self.memory.set(dest, value);
+                            memory.set(dest, value);
                         }
                         CodePoint::Cpy { dest, source } => {
-                            let data = self.memory.get(source);
-                            self.memory.set(dest, data);
+                            let data = memory.get(source);
+                            memory.set(dest, data);
                         }
-                        CodePoint::Add => self.memory.registry.add(),
-                        CodePoint::Sub => self.memory.registry.sub(),
-                        CodePoint::Mul => self.memory.registry.mul(),
-                        CodePoint::Div => self.memory.registry.div(),
-                        CodePoint::Mod => self.memory.registry.modulo(),
+                        CodePoint::Add => memory.registry.add(),
+                        CodePoint::Sub => memory.registry.sub(),
+                        CodePoint::Mul => memory.registry.mul(),
+                        CodePoint::Div => memory.registry.div(),
+                        CodePoint::Mod => memory.registry.modulo(),
                         CodePoint::Cmp => {
-                            let cmp_val = match self.memory.registry.cmp() {
+                            let cmp_val = match memory.registry.cmp() {
                                 Ordering::Less => 0,
                                 Ordering::Equal => 1,
                                 Ordering::Greater => 2,
                             };
-                            self.memory.registry.o = cmp_val;
+                            memory.registry.o = cmp_val;
                         }
-                        CodePoint::BJmp { cond } => jumping = self.memory.get(cond) != 0,
+                        CodePoint::BJmp { cond } => jumping = memory.get(cond) != 0,
                         CodePoint::RAdd { name } => {
                             let frame =
-                                Interpreter::make_code_frame(&self.routines, &name).unwrap();
+                                Interpreter::make_code_frame(routines, &name).unwrap();
                             runtime_stack.push(frame);
                             break;
                         }
                         CodePoint::RSwp { name } => {
                             let frame =
-                                Interpreter::make_code_frame(&self.routines, &name).unwrap();
+                                Interpreter::make_code_frame(routines, &name).unwrap();
                             runtime_stack.pop();
                             runtime_stack.push(frame);
                             break;
@@ -101,12 +100,12 @@ impl Interpreter {
                             break;
                         }
                         CodePoint::Print { source } => match source {
-                            ValMemLoc::MemLoc(source) => print!("{}", self.memory.get(source)),
+                            ValMemLoc::MemLoc(source) => print!("{}", memory.get(source)),
                             ValMemLoc::Value(lit) => print!("{}", lit),
                         },
                         CodePoint::PrintC { source } => match source {
                             ValMemLoc::MemLoc(source) => {
-                                print!("{}", self.memory.get(source) as char)
+                                print!("{}", memory.get(source) as char)
                             }
                             ValMemLoc::Value(lit) => print!("{}", lit as char),
                         }
@@ -244,7 +243,7 @@ impl Memory {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CodeBlock {
     pub code: Vec<CodePoint>,
 }

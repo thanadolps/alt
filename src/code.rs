@@ -3,8 +3,9 @@ use crate::interpreter::{MemUnit, CodeBlock};
 use std::convert::{TryFrom, TryInto};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum CodePoint {
     Set {
         dest: MemLocation,
@@ -40,7 +41,7 @@ pub enum CodePoint {
     Term,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize )]
 pub struct Routines {
     pub routine_map: HashMap<String, CodeBlock, BuildHasherDefault<seahash::SeaHasher>>
 }
@@ -49,10 +50,22 @@ impl Routines {
     pub fn new() -> Self {
         Routines {routine_map: HashMap::default()}
     }
+
+    pub fn add_routine<'a>(
+        &mut self,
+        name: String,
+        routines: CodeBlock,
+    ) -> Result<(), &'static str> {
+        if let Some(_dup_rout) = self.routine_map.insert(name, routines) {
+            Err("Routine with the same name already exist")
+        } else {
+            Ok(())
+        }
+    }
 }
 
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Registry {
     I1,
     I2,
@@ -60,7 +73,7 @@ pub enum Registry {
 }
 
 // literal memory location without indirection
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum UnitMemLocation {
     Registry(Registry),
     Mem(usize),
@@ -88,7 +101,7 @@ impl TryFrom<&str> for UnitMemLocation {
 
 
 // memory location that may be indirect
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct MemLocation {
     pub ptr_count: u8,
     pub unit_mem: UnitMemLocation,
@@ -107,7 +120,7 @@ impl TryFrom<&str> for MemLocation {
 
 
 // memory location or literal number
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ValMemLoc {
     MemLoc(MemLocation),
     Value(MemUnit),

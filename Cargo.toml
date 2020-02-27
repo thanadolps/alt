@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 itertools = "0.8.2"
 seahash = "4.0.0"
+serde = {version = "1.0.104", features = ["derive"]}
+bincode = "1.2.1"

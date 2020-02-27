@@ -1,10 +1,10 @@
-use crate::code::{CodePoint, ValMemLoc};
+use crate::code::{CodePoint, ValMemLoc, Routines};
 use crate::interpreter::{CodeBlock, Interpreter};
 use itertools::Itertools;
 use std::convert::TryInto;
 use std::iter::empty;
 
-impl Interpreter {
+impl Routines {
     pub fn parse<'a>(
         &mut self,
         source_code: impl Iterator<Item = &'a str>,
@@ -20,14 +20,14 @@ impl Interpreter {
                 for rout in group.map(|x: &str| x.trim_end_matches(':')) {
                     if let Some(prev_routine) = &last_routine {
                         // there's prev routine but it don't contain any code
-                        self.add_routine(prev_routine.clone(), empty())?;
+                        self.parse_routine(prev_routine.clone(), empty())?;
                     }
                     last_routine = Some(rout.to_string());
                 }
             } else {
                 // parse routine and use it up (by setting it to None)
                 if let Some(prev_routine) = last_routine {
-                    self.add_routine(prev_routine, group)?;
+                    self.parse_routine(prev_routine, group)?;
                     last_routine = None;
                 } else {
                     // detected code without routine
@@ -38,24 +38,20 @@ impl Interpreter {
         }
 
         if let Some(prev_routine) = &last_routine {
-            self.add_routine(prev_routine.clone(), empty())?;
+            self.parse_routine(prev_routine.clone(), empty())?;
         }
 
         Ok(())
     }
 
-    pub(super) fn add_routine<'a>(
+    pub(super) fn parse_routine<'a>(
         &mut self,
         name: String,
         source_code: impl Iterator<Item = &'a str>,
     ) -> Result<(), &'static str> {
         let code_block = parse_codeblock(source_code)?;
-
-        if let Some(_dup_rout) = self.routines.routine_map.insert(name, code_block) {
-            Err("Routine with the same name already exist")
-        } else {
-            Ok(())
-        }
+        self.add_routine(name,code_block)?;
+        Ok(())
     }
 }
 
