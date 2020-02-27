@@ -1,5 +1,5 @@
 use crate::code::{CodePoint, ValMemLoc, Routines};
-use crate::interpreter::{CodeBlock, Interpreter};
+use crate::interpreter::CodeBlock;
 use itertools::Itertools;
 use std::convert::TryInto;
 use std::iter::empty;

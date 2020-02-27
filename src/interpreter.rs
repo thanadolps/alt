@@ -1,7 +1,6 @@
 use crate::code::{CodePoint, MemLocation, ValMemLoc, Routines, UnitMemLocation};
 
 use std::cmp::Ordering;
-use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
 pub type MemUnit = u8;
@@ -14,11 +13,10 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        let mut interpreter = Self {
+        Interpreter {
             memory: Memory::new(),
             runtime_stack: Vec::new(),
-        };
-        interpreter
+        }
     }
 
     pub fn execute(&mut self, routines: &Routines) -> Result<(), &'static str> {
@@ -115,7 +113,6 @@ impl Interpreter {
             } else {
                 return;
             }
-            // println!("BROKEN");
         }
     }
 }
