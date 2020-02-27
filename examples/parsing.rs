@@ -1,7 +1,7 @@
-use std::time::Instant;
-use asm_like_lang::prelude::Routines;
+use alt::prelude::Routines;
 use std::fs::{File, OpenOptions};
 use std::io::Read;
+use std::time::Instant;
 
 fn main() {
     let start_instant = Instant::now();
@@ -14,10 +14,17 @@ fn main() {
         routines.parse(code.lines()).unwrap();
         routines
     };
-    println!("Parsing done in {:?} using {} bytes", Instant::now() - start_instant, bincode::serialized_size(&routines).unwrap());
+    println!(
+        "Parsing done in {:?} using {} bytes",
+        Instant::now() - start_instant,
+        bincode::serialized_size(&routines).unwrap()
+    );
 
     println!("Output to examples/sample_compiled.bin");
-    let mut output_file =
-        OpenOptions::new().write(true).create(true).open("examples/sample_compiled.bin").unwrap();
+    let output_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open("examples/sample_compiled.bin")
+        .unwrap();
     bincode::serialize_into(output_file, &routines).unwrap();
 }

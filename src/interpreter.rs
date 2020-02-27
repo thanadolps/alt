@@ -1,11 +1,11 @@
-use crate::code::{CodePoint, MemLocation, ValMemLoc, Routines, UnitMemLocation};
+use crate::code::{CodePoint, MemLocation, Routines, UnitMemLocation, ValMemLoc};
 
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use serde::{Serialize, Deserialize};
 
 pub type MemUnit = u8;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Interpreter {
     pub memory: Memory,
     pub runtime_stack: Vec<CodeFrame>,
@@ -24,7 +24,11 @@ impl Interpreter {
         Ok(())
     }
 
-    pub fn execute_routine(&mut self, routine_name: &str, routines: &Routines) -> Result<(), &'static str> {
+    pub fn execute_routine(
+        &mut self,
+        routine_name: &str,
+        routines: &Routines,
+    ) -> Result<(), &'static str> {
         let frame = Interpreter::make_code_frame(&routines, routine_name)?;
 
         self.runtime_stack.push(frame);
@@ -33,11 +37,9 @@ impl Interpreter {
         Ok(())
     }
 
-    fn make_code_frame(
-        routines: &Routines,
-        routine_name: &str,
-    ) -> Result<CodeFrame, &'static str> {
-        let routine = routines.routine_map
+    fn make_code_frame(routines: &Routines, routine_name: &str) -> Result<CodeFrame, &'static str> {
+        let routine = routines
+            .routine_map
             .get(routine_name)
             .ok_or("call of undeclared routine")?
             .clone();
@@ -46,13 +48,20 @@ impl Interpreter {
 
     // this is for internal use. for public use, use execute
     fn run(&mut self, routines: &Routines) {
-        let Interpreter { runtime_stack, memory, .. } = self;
+        let Interpreter {
+            runtime_stack,
+            memory,
+            ..
+        } = self;
 
         // Main meat
         loop {
             let mut jumping = false;
             if let Some(CodeFrame { fetcher }) = runtime_stack.last_mut() {
-                if fetcher.len() == 0 { runtime_stack.pop(); continue; }
+                if fetcher.len() == 0 {
+                    runtime_stack.pop();
+                    continue;
+                }
                 for code_point in fetcher {
                     match code_point {
                         CodePoint::Land if jumping => {
@@ -81,18 +90,16 @@ impl Interpreter {
                         }
                         CodePoint::BJmp { cond } => jumping = memory.get(cond) != 0,
                         CodePoint::RAdd { name } => {
-                            let frame =
-                                Interpreter::make_code_frame(routines, &name).unwrap();
+                            let frame = Interpreter::make_code_frame(routines, &name).unwrap();
                             runtime_stack.push(frame);
                             break;
                         }
                         CodePoint::RSwp { name } => {
-                            let frame =
-                                Interpreter::make_code_frame(routines, &name).unwrap();
+                            let frame = Interpreter::make_code_frame(routines, &name).unwrap();
                             runtime_stack.pop();
                             runtime_stack.push(frame);
                             break;
-                        },
+                        }
                         CodePoint::Term => {
                             runtime_stack.pop();
                             break;
@@ -102,11 +109,9 @@ impl Interpreter {
                             ValMemLoc::Value(lit) => print!("{}", lit),
                         },
                         CodePoint::PrintC { source } => match source {
-                            ValMemLoc::MemLoc(source) => {
-                                print!("{}", memory.get(source) as char)
-                            }
+                            ValMemLoc::MemLoc(source) => print!("{}", memory.get(source) as char),
                             ValMemLoc::Value(lit) => print!("{}", lit as char),
-                        }
+                        },
                         _ => eprintln!("WARNING: unknown code point"),
                     }
                 }
@@ -117,7 +122,7 @@ impl Interpreter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Registry {
     i1: MemUnit,
     i2: MemUnit,
@@ -173,7 +178,7 @@ impl Registry {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Memory {
     registry: Registry,
     mem: Vec<MemUnit>,
@@ -190,7 +195,7 @@ impl Memory {
     pub fn get(&self, loc: MemLocation) -> MemUnit {
         match self.pointer_chase(loc) {
             UnitMemLocation::Registry(reg) => self.registry.get(reg),
-            UnitMemLocation::Mem(i) => { self.mem_get(i) },
+            UnitMemLocation::Mem(i) => self.mem_get(i),
         }
     }
 
@@ -200,7 +205,10 @@ impl Memory {
 
     // chase down and deref the pointer to final memory location (only work on mem and not registry)
     fn pointer_chase(&self, mem_loc: MemLocation) -> UnitMemLocation {
-        let MemLocation {ptr_count, unit_mem: unit_loc, } = mem_loc;
+        let MemLocation {
+            ptr_count,
+            unit_mem: unit_loc,
+        } = mem_loc;
 
         // just return if there's no deref
         if ptr_count == 0 {
@@ -210,11 +218,10 @@ impl Memory {
         // first deref (special case cause unit_loc can be registry)
         // since pointer cannot point to registry, after this the location will be on MEM
         // so we can just store an index (usize)
-        let mut index_val =
-            match unit_loc {
-                UnitMemLocation::Registry(reg) => self.registry.get(reg),
-                UnitMemLocation::Mem(i) => self.mem_get(i),
-            } as usize;
+        let mut index_val = match unit_loc {
+            UnitMemLocation::Registry(reg) => self.registry.get(reg),
+            UnitMemLocation::Mem(i) => self.mem_get(i),
+        } as usize;
 
         for _ in 1..ptr_count {
             index_val = self.mem_get(index_val) as usize;
@@ -225,9 +232,7 @@ impl Memory {
     // this will auto expand
     pub fn set(&mut self, loc: MemLocation, val: MemUnit) {
         match self.pointer_chase(loc) {
-            UnitMemLocation::Registry(reg) => {
-                self.registry.set(reg, val)
-            },
+            UnitMemLocation::Registry(reg) => self.registry.set(reg, val),
             UnitMemLocation::Mem(index) => {
                 if let Some(mem_ref) = self.mem.get_mut(index) {
                     *mem_ref = val;

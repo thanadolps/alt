@@ -1,4 +1,4 @@
-use crate::code::{CodePoint, ValMemLoc, Routines};
+use crate::code::{CodePoint, Routines, ValMemLoc};
 use crate::interpreter::CodeBlock;
 use itertools::Itertools;
 use std::convert::TryInto;
@@ -50,7 +50,7 @@ impl Routines {
         source_code: impl Iterator<Item = &'a str>,
     ) -> Result<(), &'static str> {
         let code_block = parse_codeblock(source_code)?;
-        self.add_routine(name,code_block)?;
+        self.add_routine(name, code_block)?;
         Ok(())
     }
 }

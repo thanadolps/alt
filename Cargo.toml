@@ -1,5 +1,5 @@
 [package]
-name = "asm_like_lang"
+name = "alt"
 version = "0.1.0"
 authors = ["thanadolps <thanadolps@gmail.com>"]
 edition = "2018"

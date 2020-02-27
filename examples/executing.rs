@@ -1,5 +1,5 @@
+use alt::prelude::*;
 use std::fs::File;
-use asm_like_lang::prelude::*;
 use std::time::Instant;
 
 fn main() {

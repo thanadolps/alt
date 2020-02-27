@@ -1,9 +1,9 @@
 use crate::code::UnitMemLocation::Mem;
-use crate::interpreter::{MemUnit, CodeBlock};
-use std::convert::{TryFrom, TryInto};
+use crate::interpreter::{CodeBlock, MemUnit};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::convert::{TryFrom, TryInto};
 use std::hash::BuildHasherDefault;
-use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum CodePoint {
@@ -32,6 +32,7 @@ pub enum CodePoint {
     RSwp {
         name: String,
     },
+    // TODO: make this custom print to impl Write (not just Stdout)?
     Print {
         source: ValMemLoc,
     },
@@ -41,21 +42,19 @@ pub enum CodePoint {
     Term,
 }
 
-#[derive(Debug, Serialize, Deserialize )]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Routines {
-    pub routine_map: HashMap<String, CodeBlock, BuildHasherDefault<seahash::SeaHasher>>
+    pub routine_map: HashMap<String, CodeBlock, BuildHasherDefault<seahash::SeaHasher>>,
 }
 
 impl Routines {
     pub fn new() -> Self {
-        Routines {routine_map: HashMap::default()}
+        Routines {
+            routine_map: HashMap::default(),
+        }
     }
 
-    pub fn add_routine<'a>(
-        &mut self,
-        name: String,
-        routines: CodeBlock,
-    ) -> Result<(), &'static str> {
+    pub fn add_routine(&mut self, name: String, routines: CodeBlock) -> Result<(), &'static str> {
         if let Some(_dup_rout) = self.routine_map.insert(name, routines) {
             Err("Routine with the same name already exist")
         } else {
@@ -63,7 +62,6 @@ impl Routines {
         }
     }
 }
-
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Registry {
@@ -99,7 +97,6 @@ impl TryFrom<&str> for UnitMemLocation {
     }
 }
 
-
 // memory location that may be indirect
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct MemLocation {
@@ -114,10 +111,12 @@ impl TryFrom<&str> for MemLocation {
         let unit_mem_str = value.trim_start_matches('*');
         let unit_mem = unit_mem_str.try_into()?;
         let ptr_count = (value.len() - unit_mem_str.len()) as u8;
-        Ok(MemLocation {ptr_count, unit_mem})
+        Ok(MemLocation {
+            ptr_count,
+            unit_mem,
+        })
     }
 }
-
 
 // memory location or literal number
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
